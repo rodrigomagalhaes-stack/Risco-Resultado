@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Acesso mobile ao backoffice Altenar (Liability Report + Bet List) para Esportiva Bet",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "playwright-core": "^1.47.0",
     "@sparticuz/chromium": "^131.0.0"
