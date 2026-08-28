@@ -92,10 +92,41 @@ module.exports = async (req, res) => {
     // Etapa 2: digita o código TOTP, garante "Remember device" e confirma.
     await page.fill(SEL.codeInput, String(code).trim());
 
-    const rememberBox = page.locator(SEL.rememberDeviceCheckbox).first();
-    const isChecked = await rememberBox.evaluate((el) => el.checked).catch(() => null);
-    if (isChecked === false) {
-      await rememberBox.click();
+    // "Remember device" é opcional (só evita o 2FA nas próximas vezes). O input
+    // costuma estar ESCONDIDO (checkbox estilizado), então o .click() do Playwright
+    // espera ficar visível e estoura o timeout de 30s, travando o login inteiro.
+    // Por isso marcamos via JS dentro da página (ignora a exigência de visibilidade)
+    // e nunca deixamos essa etapa derrubar o login.
+    try {
+      const rememberBox = page.locator(SEL.rememberDeviceCheckbox).first();
+      if ((await rememberBox.count()) > 0) {
+        const isChecked = await rememberBox.evaluate((el) => el.checked).catch(() => null);
+        if (isChecked === false) {
+          // 1) tenta o caminho "certo": clicar o label associado (dispara o handler
+          //    do framework que controla o estado visual do checkbox).
+          const nowChecked = await rememberBox
+            .evaluate((el) => {
+              const label = el.id
+                ? document.querySelector(`label[for="${el.id}"]`)
+                : el.closest('label');
+              (label || el).click();
+              return el.checked;
+            })
+            .catch(() => false);
+          // 2) se ainda não marcou, força o estado e dispara os eventos manualmente.
+          if (!nowChecked) {
+            await rememberBox
+              .evaluate((el) => {
+                el.checked = true;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+              })
+              .catch(() => {});
+          }
+        }
+      }
+    } catch (_) {
+      /* lembrar dispositivo é conveniência; nunca deve travar o login */
     }
 
     await Promise.all([
