@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "api/login.js": { "maxDuration": 60, "memory": 1536 },
+    "api/verify2fa.js": { "maxDuration": 60, "memory": 1536 },
+    "api/liability.js": { "maxDuration": 30, "memory": 1024 },
+    "api/betlist.js": { "maxDuration": 60, "memory": 1536 },
+    "api/logout.js": { "maxDuration": 10, "memory": 256 }
+  }
+}

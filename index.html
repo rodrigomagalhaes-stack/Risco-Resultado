@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Risco &amp; Resultado — Esportiva Bet</title>
+<style>
+  :root {
+    --orange: #FF3D00;
+    --graphite: #323637;
+    --bg: #f4f4f5;
+    --card: #ffffff;
+    --danger: #d32f2f;
+    --ok: #1b8a3d;
+    --muted: #767b7c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--graphite);
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: var(--graphite);
+    color: #fff;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  header h1 {
+    font-size: 16px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header h1 span { color: var(--orange); }
+  header button {
+    background: transparent;
+    border: 1px solid #55595a;
+    color: #cfd2d3;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 16px; padding-bottom: 60px; }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* Login */
+  #loginView { display: none; }
+  #loginView .card { margin-top: 40px; }
+  #loginView h2 { margin: 0 0 4px; font-size: 18px; }
+  #loginView p.hint { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; margin-top: 14px; }
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #d8d8d8;
+    font-size: 16px;
+    background: #fafafa;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--orange); color: #fff; margin-top: 20px; }
+  .btn-secondary { background: #eee; color: var(--graphite); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--orange); color: var(--orange); }
+  .btn:disabled { opacity: 0.55; }
+  .error-msg {
+    background: #fdecea;
+    color: var(--danger);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  /* App view */
+  #appView { display: none; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .actions .btn { padding: 16px 8px; font-size: 14px; }
+
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin: 18px 0 8px; }
+
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi { background: var(--card); border-radius: 12px; padding: 12px 14px; }
+  .kpi .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .kpi .value { font-size: 18px; font-weight: 700; }
+  .kpi.wide { grid-column: 1 / -1; }
+  .value.positive { color: var(--ok); }
+  .value.negative { color: var(--danger); }
+
+  .event-card { border-left: 4px solid var(--orange); }
+  .event-card .ev-header { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .event-card .ev-name { font-weight: 700; font-size: 14.5px; }
+  .event-card .ev-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .event-card .ev-exposure { font-size: 17px; font-weight: 800; white-space: nowrap; }
+  .sel-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-top: 1px dashed #eee; margin-top: 8px; }
+  .sel-row:first-of-type { margin-top: 10px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f0f0f0; color: var(--muted); margin-left: 8px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
+  .spinner { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 14px; }
+  .timestamp { text-align: center; color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Risco &amp; Resultado <span>· Esportiva Bet</span></h1>
+  <button id="logoutBtn" style="display:none;">Sair</button>
+</header>
+
+<main>
+
+  <section id="loginView">
+    <div class="card">
+      <h2>Entrar no Altenar</h2>
+      <p class="hint">Seu usuário e senha vão direto pro login real do Altenar. Não fico com eles guardados — só a sessão fica ativa por um tempo pra você não precisar logar de novo a cada consulta.</p>
+      <form id="loginForm">
+        <label for="username">Usuário</label>
+        <input type="text" id="username" autocomplete="username" required />
+        <label for="password">Senha</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+        <button type="submit" class="btn btn-primary" id="loginBtn">Entrar</button>
+      </form>
+
+      <form id="twofaForm" style="display:none;">
+        <p class="hint" style="margin-top:0;">Confirme com o código que a Altenar te mandou. Só deve pedir isso da primeira vez — depois disso ele lembra o acesso.</p>
+        <label for="twofaCode">Código de verificação</label>
+        <input type="text" id="twofaCode" inputmode="numeric" autocomplete="one-time-code" required />
+        <button type="submit" class="btn btn-primary" id="twofaBtn">Confirmar</button>
+        <button type="button" class="btn btn-secondary" id="twofaCancelBtn" style="margin-top:10px;">Cancelar</button>
+      </form>
+
+      <div id="loginError" class="error-msg" style="display:none;"></div>
+      <div id="loginDebug" style="display:none; margin-top:14px;"></div>
+    </div>
+  </section>
+
+  <section id="appView">
+    <div class="actions">
+      <button class="btn btn-primary" id="btnRisco">Ver Risco</button>
+      <button class="btn btn-outline" id="btnResultado">Ver Resultado</button>
+    </div>
+
+    <div id="content">
+      <div class="empty">Escolha "Ver Risco" ou "Ver Resultado" acima.</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  const loginView = document.getElementById('loginView');
+  const appView = document.getElementById('appView');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const loginForm = document.getElementById('loginForm');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const loginDebug = document.getElementById('loginDebug');
+  const twofaForm = document.getElementById('twofaForm');
+  const twofaBtn = document.getElementById('twofaBtn');
+  const twofaCancelBtn = document.getElementById('twofaCancelBtn');
+  const content = document.getElementById('content');
+  const btnRisco = document.getElementById('btnRisco');
+  const btnResultado = document.getElementById('btnResultado');
+
+  let authed = false; // não temos como checar sessão sem tentar uma chamada; assume deslogado até uma chamada funcionar
+
+  function showLogin() {
+    authed = false;
+    loginView.style.display = 'block';
+    appView.style.display = 'none';
+    logoutBtn.style.display = 'none';
+    showPasswordForm();
+  }
+
+  function showApp() {
+    authed = true;
+    loginView.style.display = 'none';
+    appView.style.display = 'block';
+    logoutBtn.style.display = 'inline-block';
+  }
+
+  function money(v, currencySymbol) {
+    if (v === null || v === undefined || Number.isNaN(v)) return '—';
+    const sym = currencySymbol || '';
+    const sign = v < 0 ? '-' : '';
+    return sign + sym + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function setLoading(label) {
+    content.innerHTML = '<div class="spinner">' + label + '…</div>';
+  }
+
+  async function callApi(path) {
+    const resp = await fetch(path, { credentials: 'same-origin' });
+    const data = await resp.json().catch(() => ({ ok: false, error: 'Resposta inválida do servidor.' }));
+    if (resp.status === 401 || data.needsLogin) {
+      showLogin();
+      loginError.style.display = 'block';
+      loginError.textContent = 'Sessão expirada. Entre de novo.';
+      throw new Error('needsLogin');
+    }
+    if (!data.ok) throw new Error(data.error || 'Erro desconhecido.');
+    return data;
+  }
+
+  function renderTimestamp(iso) {
+    try {
+      const d = new Date(iso);
+      return 'Atualizado às ' + d.toLocaleTimeString('pt-BR', { timeZone: 'America/Bahia' });
+    } catch (e) { return ''; }
+  }
+
+  async function loadRisco() {
+    setLoading('Buscando Liability Report');
+    try {
+      const data = await callApi('/api/liability');
+      const renderBlock = (title, block) => {
+        if (!block.events.length) {
+          return '<div class="section-title">' + title + '</div><div class="empty">Sem eventos.</div>';
+        }
+        const cards = block.events.map((ev) => {
+          const sels = ev.selections.map((s) => (
+            '<div class="sel-row"><span>' + s.name + ' <span class="badge">' + (s.totalBets ?? 0) + ' apostas</span></span>' +
+            '<strong>' + money(s.liabilityTotal, '€') + '</strong></div>'
+          )).join('');
+          const cls = ev.worstExposure > 0 ? 'negative' : 'positive';
+          return (
+            '<div class="card event-card">' +
+              '<div class="ev-header">' +
+                '<div><div class="ev-name">' + ev.name + '</div>' +
+                '<div class="ev-meta">' + [ev.sport, ev.category, ev.champ, ev.market].filter(Boolean).join(' · ') + '</div></div>' +
+                '<div class="ev-exposure ' + cls + '">' + money(ev.worstExposure, '€') + '</div>' +
+              '</div>' + sels +
+            '</div>'
+          );
+        }).join('');
+        return '<div class="section-title">' + title + ' · mostrando ' + block.events.length + ' de ' + block.totalEvents + ' (maior exposição primeiro)</div>' + cards;
+      };
+      content.innerHTML =
+        renderBlock('Ao vivo (LIVE)', data.live) +
+        renderBlock('Pré-jogo (PRELIVE)', data.prelive) +
+        '<div class="timestamp">' + renderTimestamp(data.generatedAt) + ' · valores em EUR, moeda base do relatório</div>';
+    } catch (e) {
+      if (e.message !== 'needsLogin') {
+        content.innerHTML = '<div class="error-msg">' + e.message + '</div>';
+      }
+    }
+  }
+
+  async function loadResultado() {
+    setLoading('Buscando Bet List');
+    try {
+      const data = await callApi('/api/betlist');
+      const t = data.totals;
+      const kpi = (label, block, wide, highlight) => {
+        if (!block) return '';
+        const cls = highlight ? (block.overall >= 0 ? 'positive' : 'negative') : '';
+        return (
+          '<div class="kpi' + (wide ? ' wide' : '') + '">' +
+            '<div class="label">' + label + '</div>' +
+            '<div class="value ' + cls + '">' + money(block.overall, 'R$ ') + '</div>' +
+          '</div>'
+        );
+      };
+      content.innerHTML =
+        '<div class="section-title">Resultado de hoje (Overall) · ' + (t.overallUsers ?? '—') + ' usuários · ' + (t.overallTotalBets ?? '—') + ' apostas</div>' +
+        '<div class="kpi-grid">' +
+          kpi('Stake total', t.totalStake) +
+          kpi('Ganhos pagos', t.totalWin) +
+          kpi('Stake bônus', t.bonusStake) +
+          kpi('Ganhos bônus', t.bonusWinnings) +
+          kpi('Net', t.net, true, true) +
+        '</div>' +
+        '<div class="timestamp">' + renderTimestamp(data.generatedAt) + ' · settled ' + data.settledFrom + ' → ' + data.settledTo + ' · ' + data.currency + '</div>';
+    } catch (e) {
+      if (e.message !== 'needsLogin') {
+        content.innerHTML = '<div class="error-msg">' + e.message + '</div>';
+      }
+    }
+  }
+
+  btnRisco.addEventListener('click', loadRisco);
+  btnResultado.addEventListener('click', loadResultado);
+
+  function resetMessages() {
+    loginError.style.display = 'none';
+    loginDebug.style.display = 'none';
+    loginDebug.innerHTML = '';
+  }
+
+  function showDebug(data) {
+    if (!(data.debugScreenshotBase64 || data.debugUrl || data.debugAllValidationTexts)) return;
+    loginDebug.style.display = 'block';
+    let html = '<details style="font-size:12px; color:var(--muted);"><summary>Detalhes técnicos (pra me mandar)</summary>';
+    if (data.debugUrl) html += '<p><strong>URL:</strong> ' + data.debugUrl + '</p>';
+    if (data.debugAllValidationTexts && data.debugAllValidationTexts.length) {
+      html += '<p><strong>Mensagens na tela:</strong> ' + data.debugAllValidationTexts.join(' | ') + '</p>';
+    }
+    if (data.debugScreenshotBase64) {
+      html += '<img src="data:image/png;base64,' + data.debugScreenshotBase64 + '" style="width:100%;border-radius:8px;margin-top:6px;" />';
+    }
+    html += '</details>';
+    loginDebug.innerHTML = html;
+  }
+
+  function showTwofaForm() {
+    loginForm.style.display = 'none';
+    twofaForm.style.display = 'block';
+    document.getElementById('twofaCode').focus();
+  }
+
+  function showPasswordForm() {
+    twofaForm.style.display = 'none';
+    loginForm.style.display = 'block';
+  }
+
+  loginForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    resetMessages();
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Entrando…';
+    try {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const resp = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await resp.json();
+
+      if (data.needs2FA) {
+        showTwofaForm();
+        return;
+      }
+
+      if (!resp.ok || !data.ok) {
+        loginError.style.display = 'block';
+        loginError.textContent = data.error || 'Não consegui logar.';
+        showDebug(data);
+        return;
+      }
+      document.getElementById('password').value = '';
+      showApp();
+    } catch (e) {
+      loginError.style.display = 'block';
+      loginError.textContent = e.message;
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar';
+    }
+  });
+
+  twofaForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    resetMessages();
+    twofaBtn.disabled = true;
+    twofaBtn.textContent = 'Confirmando…';
+    try {
+      const code = document.getElementById('twofaCode').value.trim();
+      const resp = await fetch('/api/verify2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ code }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) {
+        loginError.style.display = 'block';
+        loginError.textContent = data.error || 'Não consegui confirmar o código.';
+        showDebug(data);
+        return;
+      }
+      document.getElementById('password').value = '';
+      document.getElementById('twofaCode').value = '';
+      showPasswordForm();
+      showApp();
+    } catch (e) {
+      loginError.style.display = 'block';
+      loginError.textContent = e.message;
+    } finally {
+      twofaBtn.disabled = false;
+      twofaBtn.textContent = 'Confirmar';
+    }
+  });
+
+  twofaCancelBtn.addEventListener('click', () => {
+    resetMessages();
+    document.getElementById('twofaCode').value = '';
+    showPasswordForm();
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+    content.innerHTML = '<div class="empty">Escolha "Ver Risco" ou "Ver Resultado" acima.</div>';
+    showLogin();
+  });
+
+  // Começa na tela de login; se uma chamada de API funcionar de primeira
+  // (sessão ainda ativa de uma visita recente), troca pra tela do app.
+  showLogin();
+})();
+</script>
+
+</body>
+</html>
