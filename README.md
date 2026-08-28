@@ -1,8 +1,17 @@
 # Risco & Resultado — Esportiva Bet (mobile)
 
 Página mobile pra ver o Liability Report e o Bet List do sb2admin Altenar sem
-precisar do PC. Você loga pelo celular (o login vai direto pro Altenar, eu
-não guardo usuário/senha em lugar nenhum) e a partir daí é tudo automático.
+precisar do PC. Você loga pelo celular (o login vai direto pro Altenar) e a
+partir daí é tudo automático.
+
+Sobre usuário/senha: eles não vão pra banco nenhum. Na maior parte do tempo o
+que fica guardado é só o cookie de sessão que o Altenar já daria. A única
+exceção é o 2FA: como ele é por app autenticador (TOTP, tipo Google
+Authenticator), entre você digitar a senha e confirmar o código o usuário/senha
+ficam guardados **cifrados (AES-256-GCM), só no cookie httpOnly do seu próprio
+navegador, por no máximo 5 minutos** — é o que deixa o `verify2fa` refazer o
+login inteiro numa sessão só e digitar o código. Confirmou o código, isso é
+descartado.
 
 ## Deploy (Vercel)
 
@@ -27,15 +36,19 @@ não guardo usuário/senha em lugar nenhum) e a partir daí é tudo automático.
   `Account/Login` do Altenar, guarda a sessão resultante criptografada num
   cookie `httpOnly` da própria ferramenta (não em banco nenhum). Expira em
   30 minutos. A Altenar pede um código de verificação (2FA) da primeira vez —
-  quando isso acontece, essa função guarda o estado intermediário (cookie
+  quando isso acontece, essa função guarda o usuário/senha cifrados (cookie
   `altenar_pending`, 5 min) e devolve `needs2FA: true` pro front mostrar o
   campo do código.
-- `api/verify2fa.js` — segunda etapa: recebe o código que você digitar,
-  retoma a sessão intermediária, marca "Remember device" e confirma. Se der
-  certo, salva a sessão normal **e** um cookie `altenar_device` (60 dias) com
-  o "dispositivo confiável" — é isso que faz os próximos logins pularem o
-  2FA, do jeito que você descreveu (só pede na primeira vez). `api/login.js`
-  já aplica esse cookie automaticamente nas próximas tentativas.
+- `api/verify2fa.js` — segunda etapa: recebe o código que você digitar e, com
+  as credenciais guardadas, **refaz o login inteiro numa única sessão de
+  navegador** (usuário/senha → tela de código → digita o código → confirma),
+  com "Remember device" marcado. Como o 2FA é TOTP, o código continua válido e
+  refazer o login não invalida nada — bem mais confiável do que tentar
+  ressuscitar a tela de código (o backoffice é um SPA e ela não volta só
+  recarregando a URL). Se der certo, salva a sessão normal **e** um cookie
+  `altenar_device` (60 dias) com o "dispositivo confiável" — é isso que faz os
+  próximos logins pularem o 2FA (só pede na primeira vez). `api/login.js` já
+  aplica esse cookie automaticamente nas próximas tentativas.
 - `api/liability.js` — usa o contrato JSON confirmado do Liability Report
   (`POST /Api/Liability/GetEvents`) direto por HTTP, sem abrir navegador —
   rápido. Busca PRELIVE e LIVE, ordena por maior exposição.

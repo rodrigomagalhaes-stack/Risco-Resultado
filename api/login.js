@@ -1,5 +1,5 @@
 const { launchBrowser } = require('../lib/browser');
-const { setAltenarCookies, setDeviceCookies, getDeviceCookies, setPendingCookies } = require('../lib/session');
+const { setAltenarCookies, setDeviceCookies, getDeviceCookies, setPendingCredentials } = require('../lib/session');
 const { SEL, isTwoFactorScreen, extractErrorInfo } = require('../lib/altenarLogin');
 
 const BASE_URL = 'https://sb2admin-altenar2.biahosted.com';
@@ -48,10 +48,10 @@ module.exports = async (req, res) => {
     // Caso 1: pediu o código de verificação (dispositivo não reconhecido /
     // primeira vez / "lembrar dispositivo" expirou).
     if (await isTwoFactorScreen(page)) {
-      const pendingCookies = await context.cookies();
-      // Guarda a URL exata da tela de código pra o verify2fa retomar dela, e não
-      // do /Account/Login (que só remostra usuário/senha).
-      setPendingCookies(res, pendingCookies, page.url());
+      // 2FA por app autenticador (TOTP). Guarda as credenciais (cifradas, 5 min)
+      // pro verify2fa refazer o login inteiro numa sessão só e aí digitar o
+      // código — bem mais confiável do que ressuscitar a tela de código.
+      setPendingCredentials(res, { username, password });
       res.status(200).json({ ok: false, needs2FA: true });
       return;
     }
