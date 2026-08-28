@@ -2,7 +2,7 @@
 // intermediária (cookies salvos pelo api/login.js quando detectou a tela de
 // 2FA) e confirma com "Remember device" marcado, pra não pedir de novo.
 const { launchBrowser } = require('../lib/browser');
-const { setAltenarCookies, setDeviceCookies, getPendingCookies, clearPendingCookies } = require('../lib/session');
+const { setAltenarCookies, setDeviceCookies, getPending, clearPendingCookies } = require('../lib/session');
 const { SEL, extractErrorInfo } = require('../lib/altenarLogin');
 
 const BASE_URL = 'https://sb2admin-altenar2.biahosted.com';
@@ -19,8 +19,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const pendingCookies = getPendingCookies(req);
-  if (!pendingCookies) {
+  const pending = getPending(req);
+  if (!pending) {
     res.status(400).json({ ok: false, error: 'Sessão de verificação expirou. Faça login de novo.' });
     return;
   }
@@ -29,14 +29,38 @@ module.exports = async (req, res) => {
   try {
     browser = await launchBrowser();
     const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
-    await context.addCookies(pendingCookies);
+    await context.addCookies(pending.cookies);
 
     const page = await context.newPage();
-    await page.goto(`${BASE_URL}/Account/Login`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    // Volta pra URL exata onde a tela de código apareceu no login (fallback pro
+    // /Account/Login se por algum motivo não tiver sido guardada).
+    const resumeUrl = pending.url || `${BASE_URL}/Account/Login`;
+    await page.goto(resumeUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
-    const codeVisible = await page.locator(SEL.codeInput).isVisible({ timeout: 5000 }).catch(() => false);
+    let codeVisible = await page.locator(SEL.codeInput).isVisible({ timeout: 5000 }).catch(() => false);
+    // Se caiu na tela de usuário/senha (a Altenar às vezes remostra o form), dá
+    // um refresh — em fluxos ASP.NET a tela de código costuma reaparecer com o
+    // cookie de 2FA presente.
     if (!codeVisible) {
-      res.status(400).json({ ok: false, error: 'A tela de verificação não apareceu de novo (a sessão pode ter expirado). Faça login de novo.' });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+      codeVisible = await page.locator(SEL.codeInput).isVisible({ timeout: 4000 }).catch(() => false);
+    }
+    if (!codeVisible) {
+      // Diagnóstico curto e legível no próprio celular pra eu saber onde parou.
+      const landedUrl = page.url();
+      const usernameVisible = await page.locator(SEL.username).isVisible().catch(() => false);
+      const title = await page.title().catch(() => '');
+      res.status(400).json({
+        ok: false,
+        error:
+          'A tela de verificação não apareceu de novo. [diag] parou em: ' + landedUrl +
+          ' | título: "' + title + '" | campo de usuário à mostra: ' + (usernameVisible ? 'sim' : 'não') +
+          '. Faça login de novo.',
+        debugResumeUrl: resumeUrl,
+        debugLandedUrl: landedUrl,
+        debugUsernameVisible: usernameVisible,
+        debugTitle: title,
+      });
       clearPendingCookies(res);
       return;
     }

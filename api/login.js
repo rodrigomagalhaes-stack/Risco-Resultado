@@ -49,7 +49,9 @@ module.exports = async (req, res) => {
     // primeira vez / "lembrar dispositivo" expirou).
     if (await isTwoFactorScreen(page)) {
       const pendingCookies = await context.cookies();
-      setPendingCookies(res, pendingCookies);
+      // Guarda a URL exata da tela de código pra o verify2fa retomar dela, e não
+      // do /Account/Login (que só remostra usuário/senha).
+      setPendingCookies(res, pendingCookies, page.url());
       res.status(200).json({ ok: false, needs2FA: true });
       return;
     }
